@@ -50,7 +50,7 @@ fn update_task_status(db: &mut Vec<Vec<Val>>, task: &Vec<Val>, status: bool) {
 }
 
 fn main() {
-    println!("Welcome to your command line ToDo manager!\n");
+    println!("Welcome to your command line ToDo manager!\n\n");
 
     let mut db: Vec<Vec<Val>> = Vec::new();
 
