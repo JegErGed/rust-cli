@@ -5,17 +5,20 @@ enum Val {
     Status(bool),
 }
 
-fn create_element(name: String, desc: String, status: bool) -> Vec<Val> {
-    let mut element: Vec<Val> = Vec::new();
-    element.push(Val::Name(name));
-    element.push(Val::Desc(desc));
-    element.push(Val::Status(status));
+#[derive(Clone, Debug, PartialEq)]
+struct Elm(Vec<Val>);
+
+fn create_element(name: String, desc: String) -> Elm {
+    let mut element = Elm(Vec::new());
+    element.0.push(Val::Name(name));
+    element.0.push(Val::Desc(desc));
+    element.0.push(Val::Status(false));
     element
 }
 
-fn set_status(element: Vec<Val>, status: bool) -> Vec<Val> {
-    let mut new_element: Vec<Val> = Vec::new();
-    for entry in element {
+fn set_status(element: &Elm, status: bool) -> Elm {
+    let mut new_element = Vec::new();
+    for entry in &element.0 {
         match entry {
             Val::Name(name) => new_element.push(Val::Name(name.clone())),
             Val::Desc(desc) => new_element.push(Val::Desc(desc.clone())),
@@ -23,54 +26,78 @@ fn set_status(element: Vec<Val>, status: bool) -> Vec<Val> {
         }
     }
     new_element.push(Val::Status(status));
-    new_element
+    Elm(new_element)
 }
 
-fn print_element(element: &Vec<Val>) {
-    for entry in element {
+fn print_element(element: &Elm) {
+    for entry in &element.0 {
         match entry {
             Val::Name(name) => println!("  Name: {}", name),
             Val::Desc(desc) => println!("  Description: {}", desc),
-            Val::Status(status) => println!("  Status: {}", status),
+            Val::Status(status) => {
+                let status_str = if *status { "Completed!" } else { "Not completed!" };
+                println!("  Status: {}", status_str);
+            },
         }
     }
 }
 
-fn print_db(db: &Vec<Vec<Val>>) {
-    for element in db {
+fn print_db(db: &Vec<Elm>) {
+    for (index, element) in db.iter().enumerate() {
+        println!("Task {}:", index + 1);
         print_element(element);
     }
 }
 
-fn update_task_status(db: &mut Vec<Vec<Val>>, task: &Vec<Val>, status: bool) {
-    if let Some(task_index) = db.iter().position(|t| t == task) {
-        let updated_task = set_status(task.clone(), status);
-        db[task_index] = updated_task;
-    }
+fn update_task_status(db: &mut Vec<Elm>, task_index: usize, status: bool) {
+    let updated_task = set_status(&db[task_index], status);
+    db[task_index] = updated_task;
 }
 
+fn user_input() -> Elm {
+    use text_io::read;
+    println!("Type the task name: ");
+    let name: String = {
+        let temp: String = read!("{}\n");
+        temp.trim().to_string()
+    };
+    println!("Type the task description: ");
+    let desc: String = {
+        let temp: String = read!("{}\n");
+        temp.trim().to_string()
+    };
+    create_element(name, desc)
+}
 fn main() {
+    use text_io::read;
     println!("Welcome to your command line ToDo manager!\n\n");
+    let mut db: Vec<Elm> = Vec::new();
+    loop {
+        println!("Type (+) to add a task.\nType (-) to remove a task.\nType (*) to remove all completed tasks.\nType (/) to change the status of a task\nType 'x' to exit.\n");
+        print_db(&db);
+        let choice: String = read!("{}\n");
 
-    let mut db: Vec<Vec<Val>> = Vec::new();
+        if choice.is_empty() {
+            println!("Invalid input. Please enter a command.");
+            continue;
+        }
 
-    let task1 = create_element(
-        String::from("Brush teeth"),
-        String::from("I need to brush teeth"),
-        false,
-    );
-    db.push(task1.clone());
+        let ch: char = choice.chars().next().unwrap();
 
-    let task2 = create_element(
-        String::from("Brush hair"),
-        String::from("I need to brush my hair"),
-        true,
-    );
-    db.push(task2.clone());
-
-    // Update the status of task1
-    update_task_status(&mut db, &task1, true);
-
-    // Print the updated database
-    print_db(&db);
+        match ch {
+            '+' => {
+                let new_task: Elm = user_input();
+                db.push(new_task.clone());
+            }
+            '/' => {
+                println!("Choose the index of the task you want to change:");
+                let task_index: usize = read!();
+                println!("Enter the new status (true/false):");
+                let status: bool = read!();
+                update_task_status(&mut db, task_index - 1, status);
+            }
+            'x' => break,
+            _ => println!("We don't recognize your input, try again."),
+        }
+    }
 }
