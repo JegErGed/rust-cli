@@ -204,7 +204,7 @@ fn main() {
     println!("Welcome to your command line ToDo manager!\n\n");
     let mut db: DB = DB::new();
     let exe_path: PathBuf = env::current_exe().expect("Failed to get current exe path");
-    let path = exe_path.parent().expect("Failed to get parent directory").join("db.txt");
+    let path = exe_path.parent().expect("Failed to get parent directory").join("todo.db");
     let path = path.to_str().expect("Failed to convert path to string").to_string();
     if Path::new(&path).exists() {
         db = DB::reload_from_file(&path)  
