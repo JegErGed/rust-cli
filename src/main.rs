@@ -1,3 +1,10 @@
+use std::fs::File;
+use std::io::Write;
+use std::io::{self, Read};
+use regex::Regex;
+use std::path::{Path, PathBuf};
+use std::env;
+
 #[derive(Clone, Debug, PartialEq)]
 enum Val {
     Name(String),
@@ -9,11 +16,11 @@ enum Val {
 struct Elm(Vec<Val>);
 
 impl Elm {
-    fn new(name: String, desc: String) -> Elm {
+    fn new(name: String, desc: String, status: bool) -> Elm {
         let mut element = Elm(Vec::new());
         element.0.push(Val::Name(name));
         element.0.push(Val::Desc(desc));
-        element.0.push(Val::Status(false));
+        element.0.push(Val::Status(status));
         element
     }
 
@@ -48,6 +55,17 @@ impl Elm {
             }
         }
     }
+    fn element_to_text(self: &Elm) -> String{
+        let mut data: String = String::new();
+        for entry in &self.0 {
+            match entry {
+                Val::Name(name) => data += &format!("_name_{name}"),
+                Val::Desc(desc) => data += &format!("_desc_{desc}"),
+                Val::Status(status) => data += &format!("_stat_{status}"),
+            }
+        }
+        return data;
+    }
     fn is_completed(&self) -> bool {
         for entry in &self.0 {
             if let Val::Status(status) = entry {
@@ -81,8 +99,8 @@ impl DB {
     fn update_task_status(&mut self, task_index: usize, status: bool) {
         self.0[task_index].set_status(status);
     }
-    fn add_create_element(&mut self, name: String, desc: String) {
-        self.0.push(Elm::new(name, desc));
+    fn add_create_element(&mut self, name: String, desc: String, status: bool) {
+        self.0.push(Elm::new(name, desc, status));
     }
     fn user_add_create_element(&mut self){
         use text_io::read;
@@ -96,7 +114,7 @@ impl DB {
             let temp: String = read!("{}\n");
             temp.trim().to_string()
         };
-        self.add_create_element(name, desc)
+        self.add_create_element(name, desc, false)
     }
     fn remove_completed_tasks(&mut self) {
         let mut indices = Vec::new();
@@ -108,6 +126,68 @@ impl DB {
         for index in indices.iter().rev() {
             self.remove_task(*index);
         }
+    }
+    fn save_to_file(&self, path: String) {
+        fn save_string_to_file(filename: &str, content: &str) -> io::Result<()> {
+            // Create or open the file and handle the Result
+            let mut file = File::create(filename)?;
+        
+            // Write the string content to the file
+            file.write_all(content.as_bytes())?;
+            
+            Ok(())
+        }
+        let mut data: String = String::new();
+        for entry in &self.0 {
+            data += &entry.element_to_text()
+        }
+    
+    // Attempt to save the string to a file
+    match save_string_to_file(&path, &data) {
+        Ok(_) => println!("String saved to file successfully."),
+        Err(e) => eprintln!("Failed to save string to file: {}", e),
+    }
+
+    }
+    fn reload_from_file(path: &String) -> DB{
+        let mut db = DB::new();
+        fn read_string_from_file(filename: &str) -> io::Result<String> {
+            let mut file = File::open(filename)?;
+            let mut content = String::new();
+            file.read_to_string(&mut content)?;
+            Ok(content)
+        }
+        fn str_to_bool(s: &str) -> bool {
+            match s {
+                "true" => true,
+                "false" => false,
+                _ => false, // Default to false if input is invalid
+            }
+        }
+        let content = match read_string_from_file(&path) {
+            Ok(content) => {
+                println!("File content: {}", content);
+                content
+            },
+            Err(e) => {
+                eprintln!("Failed to read file: {}", e);
+                return db;
+            }
+        };
+    
+        // Create a regex pattern to match the structure
+        let re = Regex::new(r"_name_(.*?)_desc_(.*?)_stat_(true|false)").unwrap();
+    
+        // Iterate over all matches
+        for caps in re.captures_iter(&content) {
+            let name = caps.get(1).or(caps.get(4)).map_or("", |m| m.as_str()).to_string();
+            let desc = caps.get(2).or(caps.get(5)).map_or("", |m| m.as_str()).to_string();
+            let stat = caps.get(3).or(caps.get(6)).map_or("", |m| m.as_str()).to_string();
+    
+            // Call the add_create_element method on the DB instance
+            db.add_create_element(name, desc, str_to_bool(&stat));
+        }
+    return db;
     }
     
 }
@@ -123,6 +203,13 @@ fn main() {
     use text_io::read;
     println!("Welcome to your command line ToDo manager!\n\n");
     let mut db: DB = DB::new();
+    let exe_path: PathBuf = env::current_exe().expect("Failed to get current exe path");
+    let path = exe_path.parent().expect("Failed to get parent directory").join("db.txt");
+    let path = path.to_str().expect("Failed to convert path to string").to_string();
+    if Path::new(&path).exists() {
+        db = DB::reload_from_file(&path)  
+    }
+
     loop {
         db.print_db();
         println!("Type (+) to add a task.\nType (-) to remove a task.\nType (*) to remove all completed tasks.\nType (/) to change the status of a task\nType 'x' to exit.\n");
@@ -180,7 +267,11 @@ fn main() {
             '*' => {
                 db.remove_completed_tasks();
             }
-            'x' => break,
+            'x' => {
+                db.save_to_file(path);
+                
+                break
+            },
             _ => println!("We don't recognize your input, try again."),
         }
     }
