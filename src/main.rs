@@ -152,13 +152,25 @@ fn main() {
                 println!("Choose the index of the task you want to change:");
                 let task_index: usize = read!();
                 if task_index > 0 && task_index <= db.0.len() {
-                    println!("Enter the new status (true/false):");
-                    let status: bool = read!();
-                    db.update_task_status( task_index - 1, status);
+                    println!("Is this task completed? (y/n)");
+                    let answer: String = read!("{}\n");
+                    let ans: char = answer.chars().next().unwrap_or(' ');
+                    
+                    let status = match ans {
+                        'y' | 'Y' => true,
+                        'n' | 'N' => false,
+                        _ => {
+                            println!("Invalid input. Please enter 'y' or 'n'.");
+                            continue; // Skip the rest of the loop iteration and ask for input again
+                        }
+                    };
+                    
+                    db.update_task_status(task_index - 1, status);
                 } else {
                     println!("Invalid task index.");
                 }
-            }
+                }
+
             '*' => {
                 db.remove_completed_tasks();
             }
