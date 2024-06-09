@@ -3,7 +3,7 @@
 version = 3
 
 [[package]]
-name = "rust-cli"
+name = "Todo-rust"
 version = "0.1.0"
 dependencies = [
  "text_io",
