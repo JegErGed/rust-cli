@@ -166,7 +166,6 @@ impl DB {
         }
         let content = match read_string_from_file(&path) {
             Ok(content) => {
-                println!("File content: {}", content);
                 content
             },
             Err(e) => {
