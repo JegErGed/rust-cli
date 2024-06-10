@@ -282,7 +282,7 @@ fn main() {
             'x' => {
                 db.save_to_file(path);
 
-                break;
+                return;
             }
             _ => println!("We don't recognize your input, try again."),
         }
