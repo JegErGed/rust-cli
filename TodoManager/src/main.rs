@@ -1,9 +1,9 @@
+use regex::Regex;
+use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::io::{self, Read};
-use regex::Regex;
 use std::path::{Path, PathBuf};
-use std::env;
 
 #[derive(Clone, Debug, PartialEq)]
 enum Val {
@@ -21,7 +21,7 @@ impl Elm {
         element.0.push(Val::Name(name));
         element.0.push(Val::Desc(desc));
         element.0.push(Val::Status(status));
-        element
+        return element;
     }
 
     fn set_status(&mut self, status: bool) {
@@ -49,13 +49,17 @@ impl Elm {
                 Val::Name(name) => println!("  Name: {}", name),
                 Val::Desc(desc) => println!("  Description: {}", desc),
                 Val::Status(status) => {
-                    let status_str = if *status { "Completed!" } else { "Not completed!" };
+                    let status_str = if *status {
+                        "Completed!"
+                    } else {
+                        "Not completed!"
+                    };
                     println!("  Status: {}", status_str);
-                },
+                }
             }
         }
     }
-    fn element_to_text(self: &Elm) -> String{
+    fn element_to_text(self: &Elm) -> String {
         let mut data: String = String::new();
         for entry in &self.0 {
             match entry {
@@ -74,7 +78,6 @@ impl Elm {
         }
         false
     }
-
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -102,7 +105,7 @@ impl DB {
     fn add_create_element(&mut self, name: String, desc: String, status: bool) {
         self.0.push(Elm::new(name, desc, status));
     }
-    fn user_add_create_element(&mut self){
+    fn user_add_create_element(&mut self) {
         use text_io::read;
         println!("Type the task name: ");
         let name: String = {
@@ -131,25 +134,24 @@ impl DB {
         fn save_string_to_file(filename: &str, content: &str) -> io::Result<()> {
             // Create or open the file and handle the Result
             let mut file = File::create(filename)?;
-        
+
             // Write the string content to the file
             file.write_all(content.as_bytes())?;
-            
+
             Ok(())
         }
         let mut data: String = String::new();
         for entry in &self.0 {
             data += &entry.element_to_text()
         }
-    
-    // Attempt to save the string to a file
-    match save_string_to_file(&path, &data) {
-        Ok(_) => println!("String saved to file successfully."),
-        Err(e) => eprintln!("Failed to save string to file: {}", e),
-    }
 
+        // Attempt to save the string to a file
+        match save_string_to_file(&path, &data) {
+            Ok(_) => println!("String saved to file successfully."),
+            Err(e) => eprintln!("Failed to save string to file: {}", e),
+        }
     }
-    fn reload_from_file(path: &String) -> DB{
+    fn reload_from_file(path: &String) -> DB {
         let mut db = DB::new();
         fn read_string_from_file(filename: &str) -> io::Result<String> {
             let mut file = File::open(filename)?;
@@ -168,46 +170,56 @@ impl DB {
             Ok(content) => {
                 println!("File content: {}", content);
                 content
-            },
+            }
             Err(e) => {
                 eprintln!("Failed to read file: {}", e);
                 return db;
             }
         };
-    
+
         // Create a regex pattern to match the structure
         let re = Regex::new(r"_name_(.*?)_desc_(.*?)_stat_(true|false)").unwrap();
-    
+
         // Iterate over all matches
         for caps in re.captures_iter(&content) {
-            let name = caps.get(1).or(caps.get(4)).map_or("", |m| m.as_str()).to_string();
-            let desc = caps.get(2).or(caps.get(5)).map_or("", |m| m.as_str()).to_string();
-            let stat = caps.get(3).or(caps.get(6)).map_or("", |m| m.as_str()).to_string();
-    
+            let name = caps
+                .get(1)
+                .or(caps.get(4))
+                .map_or("", |m| m.as_str())
+                .to_string();
+            let desc = caps
+                .get(2)
+                .or(caps.get(5))
+                .map_or("", |m| m.as_str())
+                .to_string();
+            let stat = caps
+                .get(3)
+                .or(caps.get(6))
+                .map_or("", |m| m.as_str())
+                .to_string();
+
             // Call the add_create_element method on the DB instance
             db.add_create_element(name, desc, str_to_bool(&stat));
         }
-    return db;
+        return db;
     }
-    
 }
-
-
-
-
-
-
-
 
 fn main() {
     use text_io::read;
     println!("Welcome to your command line ToDo manager!\n\n");
     let mut db: DB = DB::new();
     let exe_path: PathBuf = env::current_exe().expect("Failed to get current exe path");
-    let path = exe_path.parent().expect("Failed to get parent directory").join("todo.db");
-    let path = path.to_str().expect("Failed to convert path to string").to_string();
+    let path = exe_path
+        .parent()
+        .expect("Failed to get parent directory")
+        .join("todo.db");
+    let path = path
+        .to_str()
+        .expect("Failed to convert path to string")
+        .to_string();
     if Path::new(&path).exists() {
-        db = DB::reload_from_file(&path)  
+        db = DB::reload_from_file(&path)
     }
 
     loop {
@@ -242,11 +254,11 @@ fn main() {
 
                 if let Ok(task_index) = task_index_input.parse::<usize>() {
                     if task_index > 0 && task_index <= db.0.len() {
-                        db.0[task_index-1].print_element();
+                        db.0[task_index - 1].print_element();
                         println!("Is this task completed? (y/n)");
                         let answer: String = read!("{}\n");
                         let ans: char = answer.chars().next().unwrap_or(' ');
-                    
+
                         let status = match ans {
                             'y' | 'Y' => true,
                             'n' | 'N' => false,
@@ -255,7 +267,7 @@ fn main() {
                                 continue; // Skip the rest of the loop iteration and ask for input again
                             }
                         };
-                    
+
                         db.update_task_status(task_index - 1, status);
                     } else {
                         println!("Invalid task index.");
@@ -269,9 +281,9 @@ fn main() {
             }
             'x' => {
                 db.save_to_file(path);
-                
-                break
-            },
+
+                break;
+            }
             _ => println!("We don't recognize your input, try again."),
         }
     }
