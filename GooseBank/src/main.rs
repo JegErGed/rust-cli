@@ -1,4 +1,7 @@
-use std::{hash::{DefaultHasher, Hash}, ops::{Add, AddAssign, Sub, SubAssign}};
+use std::{
+    hash::{DefaultHasher, Hash},
+    ops::{Add, AddAssign, Sub, SubAssign},
+};
 
 #[derive(Clone, Debug, Hash)]
 enum Data {
@@ -72,7 +75,7 @@ impl User {
         output += &salt;
         output += &passwd;
         output.hash(&mut hasher);
-        return output
+        return output;
     }
 
     fn new(name: String, passwd: String, money: i32, salt: &str) -> User {
@@ -86,7 +89,7 @@ impl User {
     fn passwd(&self, input_pass: &str, salt: &str) -> bool {
         for entry in &self.0 {
             if let Data::Passwd(passwd) = entry {
-                return passwd == User::hash(input_pass, salt);
+                return passwd.to_string() == User::hash(input_pass.to_string(), salt);
             }
         }
         return false;
@@ -113,7 +116,7 @@ impl User {
             match entry {
                 Data::Name(name) => println!("Name: {}", name),
                 Data::Passwd(_) => (),
-                Data::Money(money) => println!("Money: {}", money.to_string())
+                Data::Money(money) => println!("Money: {}", money.to_string()),
             }
         }
     }
@@ -125,6 +128,6 @@ fn main() {
     let salt: String = "goulashBanken".to_string();
     let mut user: User = User::new("Goulash".to_string(), "123".to_string(), 500, &salt);
     user.print_user("123", &salt);
-    user.update_money(200, "234", &salt);
-    user.print_user("234", &salt);
+    user.update_money(200, "123", &salt);
+    user.print_user("123", &salt);
 }
