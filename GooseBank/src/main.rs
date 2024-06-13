@@ -84,7 +84,7 @@ impl User {
         user.0.push(Data::Name(name));
         user.0.push(Data::Passwd(User::hash(passwd)));
         user.0.push(Data::Money(money));
-        user
+        return user;
     }
 
     fn passwd(&self, input_pass: &str) -> bool {
@@ -94,7 +94,7 @@ impl User {
                 return *stored_passwd == hashed_input;
             }
         }
-        false
+        return false;
     }
 
     fn update_money(&mut self, add_money: i32, input_pass: &str) {
