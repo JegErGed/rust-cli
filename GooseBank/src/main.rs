@@ -1,12 +1,13 @@
 use std::{
-    hash::{DefaultHasher, Hash},
+    hash::{Hash, Hasher},
+    collections::hash_map::DefaultHasher,
     ops::{Add, AddAssign, Sub, SubAssign},
 };
 
 #[derive(Clone, Debug, Hash)]
 enum Data {
     Name(String),
-    Passwd(String),
+    Passwd(u64),
     Money(i32),
 }
 
@@ -69,34 +70,35 @@ impl SubAssign<i32> for User {
 }
 
 impl User {
-    fn hash(passwd: String, salt: &str) -> String {
+    fn hash<T>(passwd: T) -> u64
+    where
+        T: Hash,
+    {
         let mut hasher = DefaultHasher::new();
-        let mut output: String = String::new();
-        output += &salt;
-        output += &passwd;
-        output.hash(&mut hasher);
-        return output;
+        passwd.hash(&mut hasher);
+        hasher.finish()
     }
 
-    fn new(name: String, passwd: String, money: i32, salt: &str) -> User {
+    fn new(name: String, passwd: String, money: i32) -> User {
         let mut user = User(Vec::new());
         user.0.push(Data::Name(name));
-        user.0.push(Data::Passwd(User::hash(passwd, &salt)));
+        user.0.push(Data::Passwd(User::hash(passwd)));
         user.0.push(Data::Money(money));
-        return user;
+        user
     }
 
-    fn passwd(&self, input_pass: &str, salt: &str) -> bool {
+    fn passwd(&self, input_pass: &str) -> bool {
+        let hashed_input = User::hash(input_pass);
         for entry in &self.0 {
-            if let Data::Passwd(passwd) = entry {
-                return passwd.to_string() == User::hash(input_pass.to_string(), salt);
+            if let Data::Passwd(stored_passwd) = entry {
+                return *stored_passwd == hashed_input;
             }
         }
-        return false;
+        false
     }
 
-    fn update_money(&mut self, add_money: i32, input_pass: &str, salt: &str) {
-        if !&self.passwd(input_pass, &salt) {
+    fn update_money(&mut self, add_money: i32, input_pass: &str) {
+        if !self.passwd(input_pass) {
             println!("Access not granted!");
             return;
         }
@@ -107,8 +109,8 @@ impl User {
         }
     }
 
-    fn print_user(&self, input_pass: &str, salt: &str) {
-        if !&self.passwd(input_pass, &salt) {
+    fn print_user(&self, input_pass: &str) {
+        if !self.passwd(input_pass) {
             println!("Access not granted!");
             return;
         }
@@ -116,7 +118,7 @@ impl User {
             match entry {
                 Data::Name(name) => println!("Name: {}", name),
                 Data::Passwd(_) => (),
-                Data::Money(money) => println!("Money: {}", money.to_string()),
+                Data::Money(money) => println!("Money: {}", money),
             }
         }
     }
@@ -125,9 +127,8 @@ impl User {
 fn main() {
     println!("Welcome to GooseBank!");
 
-    let salt: String = "goulashBanken".to_string();
-    let mut user: User = User::new("Goulash".to_string(), "123".to_string(), 500, &salt);
-    user.print_user("123", &salt);
-    user.update_money(200, "123", &salt);
-    user.print_user("123", &salt);
+    let mut user = User::new("Goulash".to_string(), "123".to_string(), 500);
+    user.print_user("123");
+    user.update_money(200, "123");
+    user.print_user("123");
 }
