@@ -2,7 +2,6 @@
 /GooseBank/target
 /rustBootlegNano/target
 todo.db
-
+gooseBankDB.json
 # Added by cargo
 
-/target
