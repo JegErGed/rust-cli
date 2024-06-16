@@ -1,3 +1,8 @@
 /TodoManager/target
 /GooseBank/target
+/rustBootlegNano/target
 todo.db
+
+# Added by cargo
+
+/target
