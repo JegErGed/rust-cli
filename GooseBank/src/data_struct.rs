@@ -1,11 +1,9 @@
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
-    ops::{Add, AddAssign, Sub, SubAssign},
+    collections::hash_map::DefaultHasher, hash::{Hash, Hasher}, io::{self, Write, Read}, ops::{Add, AddAssign, Sub, SubAssign}, task::Context
 };
-
+use std::fs::File;
 #[derive(Clone, Debug, Hash, Deserialize, Serialize, PartialEq)]
 pub struct User {
     name: String,
@@ -113,6 +111,10 @@ impl DB {
         self.0.push(User::new(name, passwd, money));
     }
 
+    fn add_user_auto(&mut self, user: User) {
+        self.0.push(user);
+    }
+
     pub fn remove_user(&mut self, index: usize) {
         if index < self.0.len() {
             self.0.remove(index);
@@ -125,5 +127,25 @@ impl DB {
         let serialized_users: Vec<String> = self.0.iter().map(|user| user.serialize_user()).collect();
         let serialized_str = format!("[{}]", serialized_users.join(","));
         return serialized_str;
+    }
+
+    pub fn load_from_file(path: &String) -> DB{
+        let mut db = DB::new();
+        pub fn read_string_from_file(filename: &str) -> io::Result<String> {
+            let mut file = File::open(filename)?;
+            let mut content = String::new();
+            file.read_to_string(&mut content);
+            Ok(content)
+        }
+        let content = match read_string_from_file(&path) {
+            Ok(content) => {
+                content
+            }
+            Err(e) => {
+                eprintln!("Failed to read file {}", e);
+                return db
+            }
+        };
+        return db
     }
 }
