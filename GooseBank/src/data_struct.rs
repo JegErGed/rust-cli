@@ -117,6 +117,7 @@ impl DB {
     pub fn add_user(&mut self, name: String, passwd: String, money: i64) {
         self.0.push(User::new(name, passwd, money));
     }
+    
 
     fn add_user_auto(&mut self, user: User) {
         self.0.push(user);
