@@ -1,9 +1,13 @@
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::{
-    collections::hash_map::DefaultHasher, hash::{Hash, Hasher}, io::{self, Write, Read}, ops::{Add, AddAssign, Sub, SubAssign}, task::Context
-};
 use std::fs::File;
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+    io::{self, Read, Write},
+    ops::{Add, AddAssign, Sub, SubAssign},
+    task::Context,
+};
 #[derive(Clone, Debug, Hash, Deserialize, Serialize, PartialEq)]
 pub struct User {
     name: String,
@@ -91,7 +95,10 @@ impl User {
         let sdata = serde_json::to_string(&self);
 
         if sdata.is_err() {
-            println!("Error, failed to serialize structure: {}", sdata.unwrap_err());
+            println!(
+                "Error, failed to serialize structure: {}",
+                sdata.unwrap_err()
+            );
             std::process::exit(1);
         }
 
@@ -123,13 +130,14 @@ impl DB {
         }
     }
 
-    pub fn serialize_db(&self) -> String{
-        let serialized_users: Vec<String> = self.0.iter().map(|user| user.serialize_user()).collect();
+    pub fn serialize_db(&self) -> String {
+        let serialized_users: Vec<String> =
+            self.0.iter().map(|user| user.serialize_user()).collect();
         let serialized_str = format!("[{}]", serialized_users.join(","));
         return serialized_str;
     }
 
-    pub fn load_from_file(path: &String) -> DB{
+    pub fn load_from_file(path: &String) -> DB {
         let mut db = DB::new();
         pub fn read_string_from_file(filename: &str) -> io::Result<String> {
             let mut file = File::open(filename)?;
@@ -138,14 +146,19 @@ impl DB {
             Ok(content)
         }
         let content = match read_string_from_file(&path) {
-            Ok(content) => {
-                content
-            }
+            Ok(content) => content,
             Err(e) => {
                 eprintln!("Failed to read file {}", e);
-                return db
+                return db;
             }
         };
-        return db
+        let users: Vec<User> = serde_json::from_str(&content).expect("Failed to deserialize JSON");
+
+        // Print the deserialized User structs
+        for user in users {
+            db.add_user_auto(user);
+        }
+
+        return db;
     }
 }
