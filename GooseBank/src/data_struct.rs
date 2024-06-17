@@ -121,12 +121,9 @@ impl DB {
         }
     }
 
-    pub fn serialize_db(&self) {
-        let mut serialized_str: String = "[".to_string();
-        for user in &self.0 {
-            serialized_str += &user.serialize_user();
-            serialized_str += ",";
-        }
-        serialized_str += "]"
-        }
+    pub fn serialize_db(&self) -> String{
+        let serialized_users: Vec<String> = self.0.iter().map(|user| user.serialize_user()).collect();
+        let serialized_str = format!("[{}]", serialized_users.join(","));
+        return serialized_str;
+    }
 }
