@@ -1,25 +1,26 @@
 mod data_struct;
-use data_struct::{Data, User};
+use data_struct::User;
 use std::{fs, io::Write, string};
 fn main() {
     println!("Welcome to GooseBank!");
 
-    let mut user = User::new("Goulash".to_string(), "123".to_string(), 500);
-    let sdata = serde_json::to_string(&user);
+    let mut user = User::new("Goulash".to_string(), "123".to_string(), 550);
+    let mut user2 = User::new("Johan".to_string(), "234".to_string(), 10000000000);
 
-    if sdata.is_err() {
-        println!("Error, filed to Serialize structure {}", sdata.unwrap_err());
-        std::process::exit(1);
-    }
+    let mut serialized: String = String::new();
+    
+    serialized += &user.serialize_user();
+    serialized += &user2.serialize_user();
 
-    let sdata = sdata.unwrap();
 
-    println!("Serialized data: {}", sdata);
+    println!("{}", serialized);
 
     let mut f = fs::File::create("gooseBankDB.json").expect("Failed to create DB");
-    f.write_all(sdata.as_bytes()).expect("Failed to save to DB");
+    f.write_all(serialized.as_bytes()).expect("Failed to save to DB");
 
     user.print_user("123");
     user.update_money(200, "123");
     user.print_user("123");
+
+    user2.print_user("234");
 }

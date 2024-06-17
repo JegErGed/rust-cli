@@ -7,68 +7,45 @@ use std::{
 };
 
 #[derive(Clone, Debug, Hash, Deserialize, Serialize, PartialEq)]
-pub enum Data {
-    Name(String),
-    Passwd(u64),
-    Money(i32),
+pub struct User {
+    name: String,
+    passwd: u64,
+    money: i64,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct User(Vec<Data>);
-
-impl Add<i32> for User {
+impl Add<i64> for User {
     type Output = User;
 
-    fn add(self, other: i32) -> User {
-        let mut new_entries = Vec::new();
-
-        for entry in self.0 {
-            match entry {
-                Data::Name(name) => new_entries.push(Data::Name(name)),
-                Data::Passwd(passwd) => new_entries.push(Data::Passwd(passwd)),
-                Data::Money(money) => new_entries.push(Data::Money(money + other)),
-            }
-        }
-
-        User(new_entries)
-    }
-}
-
-impl AddAssign<i32> for User {
-    fn add_assign(&mut self, other: i32) {
-        for entry in &mut self.0 {
-            if let Data::Money(money) = entry {
-                *money += other;
-            }
+    fn add(self, other: i64) -> User {
+        User {
+            name: self.name,
+            passwd: self.passwd,
+            money: self.money + other,
         }
     }
 }
 
-impl Sub<i32> for User {
+impl AddAssign<i64> for User {
+    fn add_assign(&mut self, other: i64) {
+        self.money += other;
+    }
+}
+
+impl Sub<i64> for User {
     type Output = User;
 
-    fn sub(self, other: i32) -> User {
-        let mut new_entries = Vec::new();
-
-        for entry in self.0 {
-            match entry {
-                Data::Name(name) => new_entries.push(Data::Name(name)),
-                Data::Passwd(passwd) => new_entries.push(Data::Passwd(passwd)),
-                Data::Money(money) => new_entries.push(Data::Money(money - other)),
-            }
+    fn sub(self, other: i64) -> User {
+        User {
+            name: self.name,
+            passwd: self.passwd,
+            money: self.money - other,
         }
-
-        User(new_entries)
     }
 }
 
-impl SubAssign<i32> for User {
-    fn sub_assign(&mut self, other: i32) {
-        for entry in &mut self.0 {
-            if let Data::Money(money) = entry {
-                *money -= other;
-            }
-        }
+impl SubAssign<i64> for User {
+    fn sub_assign(&mut self, other: i64) {
+        self.money -= other;
     }
 }
 
@@ -82,34 +59,25 @@ impl User {
         hasher.finish()
     }
 
-    pub fn new(name: String, passwd: String, money: i32) -> User {
-        let mut user = User(Vec::new());
-        user.0.push(Data::Name(name));
-        user.0.push(Data::Passwd(User::hash(passwd)));
-        user.0.push(Data::Money(money));
-        return user;
+    pub fn new(name: String, passwd: String, money: i64) -> User {
+        User {
+            name,
+            passwd: User::hash(passwd),
+            money,
+        }
     }
 
     pub fn passwd(&self, input_pass: &str) -> bool {
         let hashed_input = User::hash(input_pass);
-        for entry in &self.0 {
-            if let Data::Passwd(stored_passwd) = entry {
-                return *stored_passwd == hashed_input;
-            }
-        }
-        return false;
+        self.passwd == hashed_input
     }
 
-    pub fn update_money(&mut self, add_money: i32, input_pass: &str) {
+    pub fn update_money(&mut self, add_money: i64, input_pass: &str) {
         if !self.passwd(input_pass) {
             println!("Access not granted!");
             return;
         }
-        for entry in &mut self.0 {
-            if let Data::Money(money) = entry {
-                *money += add_money;
-            }
-        }
+        self.money += add_money;
     }
 
     pub fn print_user(&self, input_pass: &str) {
@@ -117,24 +85,51 @@ impl User {
             println!("Access not granted!");
             return;
         }
-        for entry in &self.0 {
-            match entry {
-                Data::Name(name) => println!("Name: {}", name),
-                Data::Passwd(_) => (),
-                Data::Money(money) => println!("Money: {}", money),
-            }
+        println!("Name: {}", self.name);
+        println!("Money: {:.2}", self.money as f64 / 100.0);
+    }
+
+    pub fn serialize_user(&self) -> String {
+        let sdata = serde_json::to_string(&self);
+
+        if sdata.is_err() {
+            println!("Error, failed to serialize structure: {}", sdata.unwrap_err());
+            std::process::exit(1);
         }
+
+        sdata.unwrap()
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DB(pub Vec<User>);
+
 impl DB {
     pub fn new() -> DB {
         DB(Vec::new())
     }
 
-    pub fn add_user(&mut self, name: String, passwd: String, money: i32) {
+    pub fn add_user(&mut self, name: String, passwd: String, money: i64) {
         self.0.push(User::new(name, passwd, money));
     }
+
+    pub fn remove_user(&mut self, index: usize) {
+        if index < self.0.len() {
+            self.0.remove(index);
+        } else {
+            println!("Invalid index");
+        }
+    }
+}
+
+// Example usage
+fn main() {
+    let mut db = DB::new();
+    db.add_user("Alice".to_string(), "password123".to_string(), 5000);
+    
+    let user = &db.0[0];
+    user.print_user("password123");
+    
+    let serialized_user = user.serialize_user();
+    println!("Serialized User: {}", serialized_user);
 }
