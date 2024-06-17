@@ -1,9 +1,10 @@
-use std::{
-    collections::hash_map::DefaultHasher, fs, hash::{Hash, Hasher}, io::Write, ops::{Add, AddAssign, Sub, SubAssign}, string
-};
 use serde::{Deserialize, Serialize};
 use serde_json;
-
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+    ops::{Add, AddAssign, Sub, SubAssign},
+};
 
 #[derive(Clone, Debug, Hash, Deserialize, Serialize, PartialEq)]
 pub enum Data {
@@ -125,7 +126,6 @@ impl User {
         }
     }
 }
-
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DB(pub Vec<User>);

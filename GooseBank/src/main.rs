@@ -1,5 +1,6 @@
 mod data_struct;
 use data_struct::{Data, User};
+use std::{fs, io::Write, string};
 fn main() {
     println!("Welcome to GooseBank!");
 
