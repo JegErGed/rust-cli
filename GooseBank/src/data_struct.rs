@@ -120,16 +120,13 @@ impl DB {
             println!("Invalid index");
         }
     }
-}
 
-// Example usage
-fn main() {
-    let mut db = DB::new();
-    db.add_user("Alice".to_string(), "password123".to_string(), 5000);
-    
-    let user = &db.0[0];
-    user.print_user("password123");
-    
-    let serialized_user = user.serialize_user();
-    println!("Serialized User: {}", serialized_user);
+    pub fn serialize_db(&self) {
+        let mut serialized_str: String = "[".to_string();
+        for user in &self.0 {
+            serialized_str += &user.serialize_user();
+            serialized_str += ",";
+        }
+        serialized_str += "]"
+        }
 }
